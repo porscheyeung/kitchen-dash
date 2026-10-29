@@ -368,7 +368,7 @@
     if (n === 0)
       return '<span class="gesture-label">往下滑 ↓ 或使用下方按鈕</span><div class="bowl"></div><button class="egg-shell" id="egg" aria-label="雞蛋，按 Enter 或向下滑打開">↓</button>';
     if (n === 1)
-      return '<span class="gesture-label">沿著碗邊，順暢畫圓 ↻</span><div class="mix-bowl" id="mixBowl"><span class="mix-spoon">🥄</span></div>';
+      return '<span class="gesture-label">在碗內順暢畫圓 ↻</span><div class="mix-bowl" id="mixBowl"><span class="mix-spoon" aria-hidden="true"></span></div>';
     if (n === 2)
       return '<span class="gesture-label" id="temperature">50°C · 目標 65–95°C</span><div class="pan"><span class="pan-food" id="panFood">🍳</span></div>';
     if (n === 3)
@@ -504,26 +504,37 @@
             e.clientX - r.left - r.width / 2,
             e.clientY - r.top - r.height / 2,
           ),
+          size: Math.min(r.width, r.height),
         };
       };
+      const inBowl = p => p.r >= p.size * 0.1 && p.r <= p.size * 0.55;
       stage.onpointerdown = (e) => {
         if (!active()) return;
         if (!e.isPrimary) return;
         pointer = e.pointerId;
-        lastAngle = polar(e).a;
+        const p = polar(e);
+        lastAngle = inBowl(p) ? p.a : null;
         stage.setPointerCapture(pointer);
       };
       stage.onpointermove = (e) => {
-        if (!active() || e.pointerId !== pointer || lastAngle === null) return;
+        if (!active() || e.pointerId !== pointer) return;
         const p = polar(e);
+        if (!inBowl(p)) {
+          lastAngle = null;
+          return;
+        }
+        if (lastAngle === null) {
+          lastAngle = p.a;
+          return;
+        }
         let d = p.a - lastAngle;
         if (d > Math.PI) d -= 2 * Math.PI;
         if (d < -Math.PI) d += 2 * Math.PI;
-        if (p.r > 42 && p.r < 135 && Math.abs(d) < 0.7)
+        if (Math.abs(d) <= Math.PI / 2)
           addMix(Math.abs(d) / (2 * Math.PI));
         lastAngle = p.a;
       };
-      stage.onpointerup = stage.onpointercancel = () => {
+      stage.onpointerup = stage.onpointercancel = stage.onlostpointercapture = () => {
         lastAngle = null;
         pointer = null;
       };

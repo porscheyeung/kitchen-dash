@@ -278,3 +278,45 @@ test("iPad: hold mixing, flip gate, heat buttons and custom plating survive rota
   await expect(page.locator(".custom-dish span")).toHaveCount(3);
   await context.close();
 });
+
+test("iPhone size: level two touch circles keep the spoon centered and complete mixing", async ({ browser }) => {
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true,
+  });
+  const page = await context.newPage();
+  await page.clock.install();
+  await page.goto("http://127.0.0.1:4173");
+  await page.evaluate(() => localStorage.setItem("kitchen-dash-v3", JSON.stringify({best:[100], unlocked:1})));
+  await page.reload();
+  await page.locator('[data-level="1"]').tap();
+  await page.locator("#begin").tap();
+  await page.locator("#ready").tap();
+  await page.locator("#action").tap();
+  await page.locator("#action").tap();
+  await page.locator("#ready").tap();
+  await page.locator("#mixBowl").scrollIntoViewIfNeeded();
+  const bowl = await page.locator("#mixBowl").boundingBox();
+  const cx = bowl.x + bowl.width / 2, cy = bowl.y + bowl.height / 2;
+  const cdp = await context.newCDPSession(page);
+  async function move(a, start = false) {
+    const x = cx + 32 * Math.cos(a), y = cy + 32 * Math.sin(a);
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: start ? "touchStart" : "touchMove", touchPoints: [{x,y}],
+    });
+  }
+  await move(0, true);
+  for (let i = 1; i <= 17; i++) {
+    await move(i * 0.85);
+    const centered = await page.locator(".mix-spoon").evaluate(el => {
+      const s = el.getBoundingClientRect(), b = el.parentElement.getBoundingClientRect();
+      return Math.hypot(s.x+s.width/2-b.x-b.width/2, s.y+s.height/2-b.y-b.height/2);
+    });
+    expect(centered).toBeLessThan(1);
+  }
+  await cdp.send("Input.dispatchTouchEvent", {type:"touchEnd",touchPoints:[]});
+  await expect(page.locator("#progress")).toHaveText("✓ 完成");
+  await page.screenshot({path:"docs/screenshots/iphone-mixing-chromium.png",fullPage:true});
+  await page.locator("#action").tap();
+  await expect(page.locator("#stepTitle")).toContainText("煎蛋");
+  await context.close();
+});
