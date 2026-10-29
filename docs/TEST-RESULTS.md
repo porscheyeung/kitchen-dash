@@ -2,7 +2,7 @@
 
 測試日期：2026-10-29。環境：Linux、Playwright Chromium；手機為觸控模擬，非實體 iPhone／Android。未宣稱已驗證 Safari／Firefox。
 
-最終完整回歸結果：`9 passed (3.1m)`。`node --check game.js` 與 `git diff --check` 通過。
+上一版完整回歸結果：`9 passed (3.1m)`。`node --check game.js` 與 `git diff --check` 通過。
 
 ## 自動化範圍
 
@@ -30,4 +30,18 @@
 
 `npm ci` → `npx playwright install chromium` → `npm test`。
 
-伺服器由 Playwright 自動啟動；測試共 9 個。JavaScript 語法與 `git diff --check` 同步檢查。
+伺服器由 Playwright 自動啟動；互動升級後測試共 10 個。JavaScript 語法與 `git diff --check` 同步檢查。
+
+
+## 互動升級驗證（2026-10-29）
+
+最終整合回歸：`10 passed (3.4m)`。`node --check game.js` 及 `git diff --check` 通過。
+
+參考 f0651de 原 V2 與 ffcd189 十關版；設計說明見 INTERACTION-UPDATE.md。
+
+- 新增 iPad 768 × 1024 觸控情境：按住攪拌完成、大小火力按鈕、熟度卡在 50% 等待翻面、暫停／恢復後翻面完成。
+- 自由擺盤以真實 tap 點選食物及碟內位置，三樣放妥才開放完成；旋轉至 1024 × 768 後仍保留三樣位置，結算顯示自訂成品。
+- 十關回歸改為實際按翻面後才完成煎蛋，沒有修改遊戲內部狀態。
+- 手機 390、桌面 1280 五步驟截圖已更新；人工檢視手機攪拌、桌面煎蛋及 iPad 自由擺盤，未見操作遮擋。新增 free-plate-ipad.png。
+- 本機存檔 key、逐關解鎖、三星門檻及最高 100 分維持原設定。
+- 手機及 iPad 皆為 Chromium 模擬，尚未驗證實體裝置、Safari 或 Firefox。

@@ -232,6 +232,9 @@
       cracks: 0,
       mix: 0,
       cook: 0,
+      flipped: false,
+      freePlate: false,
+      positions: {},
       burn: 0,
       temp: 50,
       heat: 42,
@@ -249,11 +252,11 @@
     ],
     [
       "沿著碗邊畫圓",
-      "按住碗邊順時針或逆時針畫圓。鍵盤可使用「攪拌一圈」按鈕。",
+      "按住碗邊順時針或逆時針畫圓。也可按住下方「按住攪拌」；鍵盤可使用「攪拌一圈」按鈕。",
     ],
     [
       "把火候留在綠色區",
-      "用滑桿調整火力，使溫度維持在 65–95°C。熟度達 100% 自動完成。",
+      "用滑桿調整火力，使溫度維持在 65–95°C。熟度達 50% 時按「翻面」，再煎至 100%。也可用小火／中火／大火按鈕。",
     ],
     [
       "金黃色，就彈出！",
@@ -261,7 +264,7 @@
     ],
     [
       "讓每樣食物找到位置",
-      "拖動食物到相同圖案的虛線圈。也可以先點食物，再點目標圈；鍵盤使用 Tab 和 Enter。",
+      "拖動食物到相同圖案的虛線圈。也可以先點食物，再點目標圈；鍵盤使用 Tab 和 Enter。也可切換「自由擺盤」，在碟上點選或拖放，自訂位置。",
     ],
   ];
   function renderStep() {
@@ -283,7 +286,7 @@
             : n === 3
               ? "等待烘烤"
               : `0 / 3 已擺盤`;
-    app.innerHTML = `<div class="game-top"><div><span class="eyebrow">LEVEL ${String(s.level + 1).padStart(2, "0")} / 10</span><h1>${l.name}</h1></div><div class="game-tools"><button class="secondary" id="pause">Ⅱ 暫停</button></div></div><nav class="stepper" aria-label="料理進度">${steps.map((t, i) => `<div class="step ${i === n ? "current" : i < n ? "done" : ""}" ${i === n ? 'aria-current="step"' : ""}>${i < n ? "✓" : icons[i]} ${t}</div>`).join("")}</nav><div class="workspace"><section class="kitchen" aria-labelledby="stepTitle"><div class="stage-heading"><h2 id="stepTitle">${icons[n]} ${steps[n]}</h2><span class="pill" id="progress">${progress}</span></div><div class="stage" id="stage">${stageMarkup(n, l)}<div class="start-overlay"><span class="big-icon">${icons[n]}</span><h3>${instructions[n][0]}</h3><p>${instructions[n][1]}</p><button class="primary" id="ready">我準備好了 →</button></div></div>${n === 2 ? '<label class="heat-control">🔥 火力 <input id="heat" aria-label="火力百分比" type="range" min="0" max="100" value="42"><b id="heatValue">42%</b></label>' : ""}<div class="game-footer"><div class="feedback" id="feedback" role="status" aria-live="polite">先看看提示，準備好才開始。</div><button class="primary action" id="action" disabled>${["打開雞蛋 ↓", "攪拌一圈 ↻", "烹調中…", "彈出多士 ↑", "完成擺盤 ✓"][n]}</button></div></section><aside class="sidebar"><div class="side-card"><h3>今日的訂單</h3><div class="order-dish">${l.icon}</div><div class="order-name">${l.dish}</div><div class="order-meta">第 ${n + 1} / 5 個步驟 · ${l.rounds} 顆蛋</div></div><div class="side-card"><div class="stat"><span>剩餘時間</span><strong id="timer">${l.time ? Math.ceil(s.remaining) + "s" : "∞"}</strong></div><div class="meter"><span id="timeFill" style="width:100%"></span></div><div class="stat" style="margin-top:18px;margin-bottom:0"><span>目前分數</span><strong id="score">${s.scores.reduce((a, b) => a + b, 0)}<small class="tiny"> / 100</small></strong></div></div><div class="coach">🧑‍🍳 主廚筆記<br><span id="coach">${["先穩穩打開，再追求速度。", "畫大一點、慢一點，順暢最重要。", "鍋子升溫需要時間，不必一直拉到最大火。", "綠框是理想的金黃區；看準再出手。", "每樣食物都有自己的位置，別急著上菜。"][n]}</span></div></aside></div>`;
+    app.innerHTML = `<div class="game-top"><div><span class="eyebrow">LEVEL ${String(s.level + 1).padStart(2, "0")} / 10</span><h1>${l.name}</h1></div><div class="game-tools"><button class="secondary" id="pause">Ⅱ 暫停</button></div></div><nav class="stepper" aria-label="料理進度">${steps.map((t, i) => `<div class="step ${i === n ? "current" : i < n ? "done" : ""}" ${i === n ? 'aria-current="step"' : ""}>${i < n ? "✓" : icons[i]} ${t}</div>`).join("")}</nav><div class="workspace"><section class="kitchen" aria-labelledby="stepTitle"><div class="stage-heading"><h2 id="stepTitle">${icons[n]} ${steps[n]}</h2><span class="pill" id="progress">${progress}</span></div><div class="stage" id="stage">${stageMarkup(n, l)}<div class="start-overlay"><span class="big-icon">${icons[n]}</span><h3>${instructions[n][0]}</h3><p>${instructions[n][1]}</p><button class="primary" id="ready">我準備好了 →</button></div></div>${n === 2 ? '<label class="heat-control">🔥 火力 <input id="heat" aria-label="火力百分比" type="range" min="0" max="100" value="42"><b id="heatValue">42%</b></label>' : ""}<div class="game-footer"><div class="feedback" id="feedback" role="status" aria-live="polite">先看看提示，準備好才開始。</div><button class="primary action" id="action" disabled>${["打開雞蛋 ↓", "攪拌一圈 ↻", "等待翻面…", "彈出多士 ↑", "完成擺盤 ✓"][n]}</button></div></section><aside class="sidebar"><div class="side-card"><h3>今日的訂單</h3><div class="order-dish">${l.icon}</div><div class="order-name">${l.dish}</div><div class="order-meta">第 ${n + 1} / 5 個步驟 · ${l.rounds} 顆蛋</div></div><div class="side-card"><div class="stat"><span>剩餘時間</span><strong id="timer">${l.time ? Math.ceil(s.remaining) + "s" : "∞"}</strong></div><div class="meter"><span id="timeFill" style="width:100%"></span></div><div class="stat" style="margin-top:18px;margin-bottom:0"><span>目前分數</span><strong id="score">${s.scores.reduce((a, b) => a + b, 0)}<small class="tiny"> / 100</small></strong></div></div><div class="coach">🧑‍🍳 主廚筆記<br><span id="coach">${["先穩穩打開，再追求速度。", "畫大一點、慢一點，順暢最重要。", "鍋子升溫需要時間，不必一直拉到最大火。", "綠框是理想的金黃區；看準再出手。", "每樣食物都有自己的位置，別急著上菜。"][n]}</span></div></aside></div>`;
     $("#ready").onclick = () => {
       $(".start-overlay").remove();
       s.running = true;
@@ -315,6 +318,49 @@
         s.heat = +e.target.value;
         $("#heatValue").textContent = s.heat + "%";
       };
+    if (n === 2) {
+      const controls = document.createElement("div");
+      controls.className = "extra-controls";
+      controls.innerHTML = '<button class="secondary" data-heat="20">小火</button><button class="secondary" data-heat="42">中火</button><button class="secondary" data-heat="80">大火</button>';
+      $(".heat-control").after(controls);
+      controls.querySelectorAll("button").forEach(b => b.onclick = () => {
+        if (!active()) return;
+        s.heat = +b.dataset.heat;
+        $("#heat").value = s.heat;
+        $("#heatValue").textContent = s.heat + "%";
+      });
+    }
+    if (n === 1) {
+      const hold = document.createElement("button");
+      hold.className = "secondary hold-mix";
+      hold.id = "holdMix";
+      hold.textContent = "按住攪拌 ↻";
+      $(".game-footer").before(hold);
+      hold.onpointerdown = e => {
+        if (!active()) return;
+        hold.setPointerCapture(e.pointerId);
+        s.holding = true;
+      };
+      hold.onpointerup = hold.onpointercancel = hold.onlostpointercapture = () => s.holding = false;
+    }
+    if (n === 4) {
+      const controls = document.createElement("div");
+      controls.className = "extra-controls";
+      controls.innerHTML = '<button class="secondary" id="freePlate" aria-pressed="false">自由擺盤</button><span class="tiny">配對入門，或自己設計早餐</span>';
+      $(".game-footer").before(controls);
+      $("#freePlate").onclick = () => {
+        if (!active()) return;
+        if (!s.freePlate) app.querySelectorAll("[data-food]").forEach(el => {
+          if (s.placed.has(+el.dataset.food)) s.positions[el.dataset.food] = {x:el.offsetLeft + 33 - $("#stage").clientWidth / 2, y:el.offsetTop + 33 - 150};
+        });
+        s.freePlate = !s.freePlate;
+        $("#freePlate").setAttribute("aria-pressed", String(s.freePlate));
+        $("#stage").classList.toggle("free-plating", s.freePlate);
+        app.querySelectorAll("[data-food]").forEach(el => el.disabled = !s.freePlate && s.placed.has(+el.dataset.food));
+        $("#feedback").textContent = s.freePlate ? "先點食物，再點碟內任意位置；也可拖動。方向鍵微調，Enter 放下。" : "先點食物，再點相同圖案的位置。";
+        layoutPlate();
+      };
+    }
     bindStage(n);
     focusTitle();
   }
@@ -345,6 +391,14 @@
   function action() {
     if (!active()) return;
     const n = state.step;
+    if (n === 2 && state.cook >= 50 && !state.flipped) {
+      state.flipped = true;
+      $("#panFood").classList.add("flipped");
+      $("#action").disabled = true;
+      $("#action").textContent = "另一面烹調中…";
+      $("#feedback").textContent = "翻得好！繼續留意火候。";
+      beep();
+    }
     if (n === 0) crack();
     if (n === 1) addMix(1);
     if (n === 3)
@@ -404,11 +458,19 @@
     if (n === 0) {
       $("#egg").onpointerdown = (e) => {
         if (!active()) return;
+        if (!e.isPrimary) return;
         origin = { x: e.clientX, y: e.clientY };
         pointer = e.pointerId;
         e.currentTarget.setPointerCapture(e.pointerId);
       };
+      $("#egg").onpointermove = (e) => {
+        if (!origin || e.pointerId !== pointer || !active()) return;
+        const dy = clamp(e.clientY - origin.y, 0, 100);
+        e.currentTarget.style.transform = `translateY(${dy * .45}px) rotate(${dy * .12}deg)`;
+        e.currentTarget.textContent = dy >= 60 ? "⚡" : "↓";
+      };
       $("#egg").onpointerup = (e) => {
+        e.currentTarget.style.transform = "";
         if (origin && e.pointerId === pointer) {
           if (
             e.clientY - origin.y >= 60 &&
@@ -424,7 +486,11 @@
       $("#egg").onclick = (e) => {
         if (e.detail === 0) crack();
       };
-      $("#egg").onpointercancel = () => (origin = null);
+      $("#egg").onpointercancel = () => {
+        origin = null;
+        $("#egg").style.transform = "";
+        $("#egg").textContent = "↓";
+      };
     }
     if (n === 1) {
       const polar = (e) => {
@@ -442,6 +508,7 @@
       };
       stage.onpointerdown = (e) => {
         if (!active()) return;
+        if (!e.isPrimary) return;
         pointer = e.pointerId;
         lastAngle = polar(e).a;
         stage.setPointerCapture(pointer);
@@ -470,7 +537,7 @@
       app.querySelectorAll("[data-food]").forEach((el) => {
         let drag = null;
         el.onclick = () => {
-          if (!active() || state.placed.has(+el.dataset.food)) return;
+          if (!active() || (state.placed.has(+el.dataset.food) && !state.freePlate)) return;
           state.selected = +el.dataset.food;
           app.querySelectorAll("[data-food]").forEach((b) => {
             const on = b === el;
@@ -480,7 +547,8 @@
           $("#feedback").textContent = "已選食物，點相同圖案的虛線圈。";
         };
         el.onpointerdown = (e) => {
-          if (!active() || state.placed.has(+el.dataset.food)) return;
+          if (!active() || (state.placed.has(+el.dataset.food) && !state.freePlate)) return;
+          if (!e.isPrimary) return;
           drag = {
             x: e.clientX,
             y: e.clientY,
@@ -498,10 +566,27 @@
             clamp(drag.top + e.clientY - drag.y, 0, stage.clientHeight - 66) +
             "px";
         };
-        el.onpointerup = () => {
+        el.onkeydown = e => {
+          if (!active() || !state.freePlate) return;
+          const moves = {ArrowLeft: [-8,0], ArrowRight: [8,0], ArrowUp:[0,-8], ArrowDown:[0,8]};
+          if (moves[e.key]) {
+            e.preventDefault();
+            el.style.left = clamp(el.offsetLeft + moves[e.key][0], 0, stage.clientWidth - 66) + "px";
+            el.style.top = clamp(el.offsetTop + moves[e.key][1], 0, stage.clientHeight - 66) + "px";
+          } else if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            if (onPlate(el.offsetLeft + 33, el.offsetTop + 33)) freePlace(+el.dataset.food, el.offsetLeft + 33, el.offsetTop + 33);
+          }
+        };
+        el.onpointerup = (e) => {
           if (!drag) return;
           drag = null;
           if (!active()) return;
+          if (state.freePlate) {
+            if (onPlate(el.offsetLeft + 33, el.offsetTop + 33)) freePlace(+el.dataset.food, el.offsetLeft + 33, el.offsetTop + 33);
+            else layoutPlate();
+            return;
+          }
           const t = $(`[data-target="${el.dataset.food}"]`);
           if (
             Math.hypot(
@@ -513,12 +598,18 @@
         };
         el.onpointercancel = () => {
           drag = null;
+          layoutPlate();
         };
+      });
+      stage.addEventListener("click", e => {
+        if (!active() || !state.freePlate || state.selected === null || e.target.closest("[data-food], .start-overlay")) return;
+        const r = stage.getBoundingClientRect(), x = e.clientX-r.left, y = e.clientY-r.top;
+        if (onPlate(x,y)) freePlace(state.selected,x,y);
       });
       app.querySelectorAll("[data-target]").forEach(
         (t) =>
           (t.onclick = () => {
-            if (!active() || state.selected === null) return;
+            if (!active() || state.freePlate || state.selected === null) return;
             if (state.selected === +t.dataset.target) place(state.selected);
             else {
               $("#feedback").textContent =
@@ -542,7 +633,10 @@
       el.style.top = 150 + spots[i][1] - 30.5 + "px";
     });
     app.querySelectorAll("[data-food]").forEach((el, i) => {
-      if (state.placed.has(i)) {
+      if (state.freePlate && state.positions[i]) {
+        el.style.left = w / 2 + state.positions[i].x - 33 + "px";
+        el.style.top = 150 + state.positions[i].y - 33 + "px";
+      } else if (state.placed.has(i)) {
         const t = $(`[data-target="${i}"]`);
         el.style.left = t.offsetLeft - 2.5 + "px";
         el.style.top = t.offsetTop - 2.5 + "px";
@@ -553,6 +647,16 @@
     });
   }
   window.addEventListener("resize", layoutPlate);
+  function onPlate(x, y) {
+    const plate = $(".plate");
+    return ((x - $("#stage").clientWidth / 2) / (plate.offsetWidth / 2 - 30)) ** 2 +
+      ((y - 150) / (plate.offsetHeight / 2 - 25)) ** 2 <= 1;
+  }
+  function freePlace(i, x, y) {
+    state.positions[i] = {x: x - $("#stage").clientWidth / 2, y: y - 150};
+    place(i);
+    $("#feedback").textContent = state.placed.size === 3 ? "你的早餐設計完成！還可移動食物，或上菜。" : "放好了！再選下一樣食物。";
+  }
   function place(i) {
     state.placed.add(i);
     state.selected = null;
@@ -560,7 +664,7 @@
     el.classList.remove("selected");
     el.classList.add("placed");
     el.setAttribute("aria-pressed", "false");
-    el.disabled = true;
+    el.disabled = !state.freePlate;
     layoutPlate();
     $("#progress").textContent = `${state.placed.size} / 3 已擺盤`;
     $("#feedback").textContent =
@@ -595,6 +699,7 @@
   function pause() {
     if (view !== "game") return;
     state.paused = true;
+    state.holding = false;
     dialog.showModal();
   }
   document.querySelector("#resume").onclick = () => {
@@ -630,6 +735,16 @@
       saved.unlocked = Math.max(saved.unlocked, s.level + 1);
     persist();
     app.innerHTML = `<section class="result"><span class="eyebrow">${timeout ? "再練習一次，就更接近了" : pass ? "ORDER COMPLETE" : "KEEP COOKING"}</span><div class="result-icon">${pass ? (s.level === 9 ? "🏆" : l.icon) : "🧑‍🍳"}</div><h1>${timeout ? "時間到了，先休息一下" : pass ? (s.level === 9 ? "恭喜，十關主廚畢業！" : "這份好心情，上菜了！") : "差一點點，再煮一次！"}</h1><div class="stars" aria-label="${timeout ? 0 : starCount(score)} 顆星">${timeout ? "☆☆☆" : stars(score)}</div><div class="served-dish" aria-label="這次煮出的成品"><span style="filter:brightness(${Math.max(0.35, 1 - s.burn / 100)})">🍳</span><span style="filter:brightness(${1 - s.brown * 0.006}) saturate(${1 + s.brown * 0.008})">🍞</span><span>🌭</span></div><div class="result-score">${score}<small> / 100 分</small></div><p class="muted">${timeout ? "這次未完成訂單；未解鎖下一關，先前最佳紀錄會保留。" : pass ? "手藝又進步了。" + (s.level < 9 ? "下一間小食堂等你開張。" : "所有關卡都已完成，還可以回去挑戰三星。") : "55 分就能過關。留意火候與多士的綠框，再試一次。"}</p><div class="score-grid">${steps.map((t, i) => `<div class="score-cell">${icons[i]} ${t}<b>${s.scores[i] ?? "—"}</b></div>`).join("")}</div>${!storageOK ? '<p class="notice">瀏覽器未允許儲存，關閉後進度可能遺失。</p>' : ""}<div class="result-actions"><button class="secondary" id="map">返回選關</button><button class="secondary" id="retry">再練一次</button>${pass && s.level < 9 ? '<button class="primary" id="nextLevel">下一關 →</button>' : ""}</div></section>`;
+    if (s.freePlate && s.placed.size === 3) {
+      $(".served-dish").classList.add("custom-dish");
+      $(".served-dish").querySelectorAll("span").forEach((el, i) => {
+        const pos = s.positions[i];
+        if (pos) {
+          el.style.left = `calc(50% + ${pos.x}px)`;
+          el.style.top = `calc(50% + ${pos.y}px)`;
+        }
+      });
+    }
     $("#map").onclick = home;
     $("#retry").onclick = () => start(s.level);
     if ($("#nextLevel")) $("#nextLevel").onclick = () => brief(s.level + 1);
@@ -654,10 +769,18 @@
           return;
         }
       }
+      if (s.step === 1 && s.holding) addMix(dt * 0.75);
       if (s.step === 2) {
         const target = 22 + s.heat * 1.2 + Math.sin(s.elapsed * 1.3) * l.drift;
         s.temp += (target - s.temp) * dt * 0.9;
         s.cook += Math.max(0, s.temp - 42) * dt * 0.29;
+        if (!s.flipped && s.cook >= 50) {
+          s.cook = 50;
+          $("#action").disabled = false;
+          $("#action").textContent = "翻面 ↻";
+          $("#feedback").textContent = "第一面煎好了！按翻面，繼續煎另一面。";
+        }
+        $(".pan").classList.toggle("sizzling", s.temp >= 65 && s.temp <= 95);
         if (s.temp > 95) s.burn += (s.temp - 95) * dt * 0.35;
         $("#temperature").textContent =
           `${Math.round(s.temp)}°C · ${s.temp < 65 ? "偏低" : s.temp > 95 ? "過熱！請減火" : "火候剛好 ✓"} · 目標 65–95°C`;

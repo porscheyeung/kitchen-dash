@@ -7,7 +7,10 @@ async function advance(page) {
   await ready(page);
 }
 async function cook(page) {
-  await page.clock.runFor(18000);
+  await page.clock.runFor(10000);
+  await expect(page.locator("#action")).toHaveText("翻面 ↻");
+  await page.locator("#action").click();
+  await page.clock.runFor(10000);
   await expect(page.locator("#progress")).toHaveText("✓ 完成");
 }
 async function toast(page, level) {
@@ -222,5 +225,56 @@ test("touch device: pointer swipe and tap pairing", async ({ browser }) => {
     await page.locator(`[data-target="${i}"]`).tap();
   }
   await expect(page.locator("#action")).toBeEnabled();
+  await context.close();
+});
+
+test("iPad: hold mixing, flip gate, heat buttons and custom plating survive rotation", async ({ browser }) => {
+  const context = await browser.newContext({ viewport: {width:768,height:1024}, hasTouch:true });
+  const page = await context.newPage();
+  await page.clock.install();
+  await page.goto("http://127.0.0.1:4173");
+  await page.locator("#continue").tap();
+  await page.locator("#begin").tap();
+  await ready(page);
+  await page.locator("#action").tap();
+  await advance(page);
+  const hold = await page.locator("#holdMix").boundingBox();
+  await page.mouse.move(hold.x+20,hold.y+20);
+  await page.mouse.down();
+  await page.clock.runFor(2500);
+  await page.mouse.up();
+  await expect(page.locator("#progress")).toHaveText("✓ 完成");
+  await advance(page);
+  await page.getByRole("button",{name:"大火",exact:true}).tap();
+  await expect(page.locator("#heat")).toHaveValue("80");
+  await page.getByRole("button",{name:"中火",exact:true}).tap();
+  await page.clock.runFor(18000);
+  await expect(page.locator("#action")).toHaveText("翻面 ↻");
+  await expect(page.locator("#progress")).toHaveText("熟度 50%");
+  await page.locator("#pause").tap();
+  await page.clock.runFor(3000);
+  await expect(page.locator("#progress")).toHaveText("熟度 50%");
+  await page.locator("#resume").tap();
+  await page.locator("#action").tap();
+  await page.clock.runFor(10000);
+  await expect(page.locator("#progress")).toHaveText("✓ 完成");
+  await advance(page);
+  await toast(page,0);
+  await advance(page);
+  await page.locator("#freePlate").tap();
+  const stageBox = await page.locator("#stage").boundingBox();
+  const offsets = [[-55,-35],[45,-35],[0,38]];
+  for (let i=0;i<3;i++) {
+    await page.locator(`[data-food="${i}"]`).tap();
+    await page.locator("#stage").tap({position:{x:stageBox.width/2+offsets[i][0],y:150+offsets[i][1]}});
+  }
+  await expect(page.locator("#action")).toBeEnabled();
+  await page.setViewportSize({width:1024,height:768});
+  await noOverflow(page);
+  await expect(page.locator(".plating-food.placed")).toHaveCount(3);
+  await page.screenshot({path:"docs/screenshots/free-plate-ipad.png",fullPage:true});
+  await page.locator("#action").tap();
+  await page.locator("#action").tap();
+  await expect(page.locator(".custom-dish span")).toHaveCount(3);
   await context.close();
 });
