@@ -1,0 +1,24 @@
+{
+  "name": "kitchen-dash",
+  "version": "1.0.0",
+  "description": "10 關漸進式料理挑戰",
+  "main": "game.js",
+  "scripts": {
+    "test": "playwright test",
+    "start": "python3 -m http.server 4173 --bind 127.0.0.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/porscheyeung/kitchen-dash.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/porscheyeung/kitchen-dash/issues"
+  },
+  "homepage": "https://github.com/porscheyeung/kitchen-dash#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.64.1"
+  }
+}
