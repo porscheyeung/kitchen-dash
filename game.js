@@ -132,8 +132,14 @@
       tolerance: 27,
     },
   ];
-  const steps = ["打蛋", "攪拌", "煎蛋", "多士", "擺盤"],
-    icons = ["🥚", "🥣", "🍳", "🍞", "🍽️"];
+  const steps = ["打蛋", "攪拌", "煎蛋", "多士", "擺盤"];
+  const A = window.KitchenArt,
+    levelArt = (i, c = "") => A[A.levelArt[i]](c),
+    stepArt = (i, c = "") => A[A.stepArt[i]](c),
+    foodArt = ["friedEgg", "toast", "sausage"],
+    foodName = ["煎蛋", "多士", "香腸"];
+  document.querySelector(".brand-icon").innerHTML = A.pan();
+  document.querySelector(".dialog-icon").innerHTML = A.coffee();
   const app = document.querySelector("#app"),
     dialog = document.querySelector("dialog");
   let saved = { best: Array(10).fill(0), unlocked: 0 },
@@ -158,6 +164,8 @@
     audio = null;
   const $ = (s) => app.querySelector(s),
     clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+  const toastFilter = (b) =>
+    `brightness(${(1.22 - b * 0.0048).toFixed(3)}) saturate(${(0.55 + b * 0.009).toFixed(3)})`;
   const starCount = (n) => (n >= 90 ? 3 : n >= 72 ? 2 : n >= 55 ? 1 : 0);
   const stars = (n) => "★".repeat(starCount(n)) + "☆".repeat(3 - starCount(n));
   function beep(good = true) {
@@ -183,6 +191,25 @@
     e.currentTarget.setAttribute("aria-label", sound ? "關閉音效" : "開啟音效");
     beep();
   };
+  // A touch on the action button is handled at pointerup; the browser's own
+  // click that follows lands on whatever the re-rendered screen put there.
+  let touchTap = null;
+  document.addEventListener(
+    "click",
+    (e) => {
+      if (
+        e.isTrusted &&
+        touchTap &&
+        performance.now() - touchTap.t < 600 &&
+        Math.hypot(e.clientX - touchTap.x, e.clientY - touchTap.y) < 16
+      ) {
+        touchTap = null;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      }
+    },
+    true,
+  );
   function persist() {
     try {
       localStorage.setItem("kitchen-dash-v3", JSON.stringify(saved));
@@ -204,7 +231,7 @@
     view = "home";
     state = null;
     const cleared = saved.best.filter((n) => n >= 55).length;
-    app.innerHTML = `<section class="hero"><div class="hero-copy"><p class="eyebrow">A LITTLE KITCHEN, A BIG ADVENTURE</p><h1>把每個早晨，<br>煮成好心情。</h1><p class="muted">從打開第一顆蛋，到端出主廚盛宴。<br>10 關料理小冒險，陪你慢慢練成大廚。</p><div class="hero-actions"><button class="primary" id="continue">${cleared ? "繼續我的旅程" : "開始第一份早餐"} <span aria-hidden="true">↗</span></button><span class="tiny">滑動・畫圓・掌握火候</span></div></div><div class="hero-art" aria-label="一盤美味早餐插畫"><span class="leaf">🌿</span><span class="hero-dish">🍳</span><span class="art-tag one">新手也能輕鬆上手 ✨</span><span class="art-tag two">今日菜單：一點點成就感</span></div></section><section aria-labelledby="journey"><div class="section-head"><h2 id="journey">你的料理旅程 <span class="tiny">${cleared} / 10</span></h2><span class="legend">55 分過關 · 90 分三星</span></div><div class="levels">${levels.map((l, i) => `<button class="level ${i === saved.unlocked ? "next" : ""}" data-level="${i}" ${i > saved.unlocked ? "disabled" : ""} aria-label="第 ${i + 1} 關 ${l.name}${i > saved.unlocked ? "，尚未解鎖" : ""}"><span class="level-top"><span>LEVEL ${String(i + 1).padStart(2, "0")}</span><span>${i > saved.unlocked ? "🔒" : saved.best[i] >= 55 ? "✓" : "↗"}</span></span><span class="level-food">${l.icon}</span><strong>${l.name}</strong><span class="description">${l.note}</span><span class="stars">${stars(saved.best[i])}</span></button>`).join("")}</div><div class="journey-bar"><span style="width:${cleared * 10}%"></span></div><div class="footer-note"><span>🌱 不用一次完美，每次練習都會更好。</span><span>${storageOK ? "進度自動儲存在此瀏覽器" : "無法儲存進度，請允許瀏覽器使用本機儲存"}</span></div></section>`;
+    app.innerHTML = `<section class="hero"><div class="hero-copy"><p class="eyebrow">A LITTLE KITCHEN, A BIG ADVENTURE</p><h1>把每個早晨，<br><span class="mark">煮成好心情。</span></h1><p class="muted">從打開第一顆蛋，到端出主廚盛宴。<br>10 關料理小冒險，陪你慢慢練成大廚。</p><div class="hero-actions"><button class="primary" id="continue">${cleared ? "繼續我的旅程" : "開始第一份早餐"} <span aria-hidden="true">↗</span></button><span class="tiny">滑動・畫圓・掌握火候</span></div></div><div class="hero-art" role="img" aria-label="一盤美味早餐插畫"><span class="hero-sun"></span><span class="leaf">${A.leaf()}</span><span class="leaf leaf-two">${A.leaf()}</span><span class="hero-dish">${A.hero()}</span><span class="hero-cup">${A.coffee()}</span><span class="art-tag one">新手也能輕鬆上手 ✨</span><span class="art-tag two">今日菜單：一點點成就感</span></div></section><section aria-labelledby="journey"><div class="section-head"><h2 id="journey">你的料理旅程 <span class="tiny">${cleared} / 10</span></h2><span class="legend">55 分過關 · 90 分三星</span></div><div class="levels">${levels.map((l, i) => `<button class="level ${i === saved.unlocked ? "next" : ""}" data-level="${i}" ${i > saved.unlocked ? "disabled" : ""} aria-label="第 ${i + 1} 關 ${l.name}${i > saved.unlocked ? "，尚未解鎖" : ""}"><span class="level-top"><span>LEVEL ${String(i + 1).padStart(2, "0")}</span><span class="level-badge ${i > saved.unlocked ? "locked" : saved.best[i] >= 55 ? "cleared" : ""}">${i > saved.unlocked ? A.lock() : saved.best[i] >= 55 ? "✓" : "↗"}</span></span><span class="level-food" style="--tint:${A.levelTint[i]}">${levelArt(i)}</span><strong>${l.name}</strong><span class="description">${l.note}</span><span class="stars">${stars(saved.best[i])}</span></button>`).join("")}</div><div class="journey-bar" aria-hidden="true"><span style="width:${cleared * 10}%"></span></div><div class="footer-note"><span>🌱 不用一次完美，每次練習都會更好。</span><span>${storageOK ? "進度自動儲存在此瀏覽器" : "無法儲存進度，請允許瀏覽器使用本機儲存"}</span></div></section>`;
     $("#continue").onclick = () => brief(saved.unlocked);
     app
       .querySelectorAll("[data-level]")
@@ -215,7 +242,7 @@
     if (i > saved.unlocked) return;
     view = "brief";
     const l = levels[i];
-    app.innerHTML = `<section class="brief"><div class="brief-art">${l.icon}</div><div class="brief-copy"><span class="eyebrow">LEVEL ${String(i + 1).padStart(2, "0")} / 10</span><h1>${l.name}</h1><p class="muted">今日訂單：<b>${l.dish}</b><br>${l.note}。完成五個步驟，累積至少 55 分即可解鎖下一關。</p><p>🥚 ${l.rounds} 顆蛋　🥣 ${l.stir} 圈<br>⏱ ${l.time ? `${l.time} 秒料理時間` : "教學關不限時間"}　⭐ 最佳 ${saved.best[i]} 分</p><p class="tiny">每步都先看提示，再按開始。提示與休息不計時；支援觸控、滑鼠和鍵盤。</p><button class="primary" id="begin">穿上圍裙，開始！</button><button class="secondary" id="back">返回料理旅程</button></div></section>`;
+    app.innerHTML = `<section class="brief"><div class="brief-art" style="--tint:${A.levelTint[i]}"><span class="brief-num">${String(i + 1).padStart(2, "0")}</span><span class="brief-dish">${levelArt(i)}</span><div class="brief-steps" aria-hidden="true">${steps.map((t, k) => `<span>${stepArt(k)}<small>${t}</small></span>`).join("")}</div></div><div class="brief-copy"><span class="eyebrow">LEVEL ${String(i + 1).padStart(2, "0")} / 10</span><h1>${l.name}</h1><p class="muted">今日訂單：<b>${l.dish}</b><br>${l.note}。完成五個步驟，累積至少 55 分即可解鎖下一關。</p><div class="brief-facts"><span><b>${l.rounds}</b>顆蛋</span><span><b>${l.stir}</b>圈攪拌</span><span><b>${l.time || "∞"}</b>${l.time ? "秒" : "不限時"}</span><span><b>${saved.best[i]}</b>最佳分</span></div><p class="tiny">每步都先看提示，再按開始。提示與休息不計時；支援觸控、滑鼠和鍵盤。</p><button class="primary" id="begin">穿上圍裙，開始！</button><button class="secondary" id="back">返回料理旅程</button></div></section>`;
     $("#begin").onclick = () => start(i);
     $("#back").onclick = home;
     focusTitle();
@@ -286,7 +313,7 @@
             : n === 3
               ? "等待烘烤"
               : `0 / 3 已擺盤`;
-    app.innerHTML = `<div class="game-top"><div><span class="eyebrow">LEVEL ${String(s.level + 1).padStart(2, "0")} / 10</span><h1>${l.name}</h1></div><div class="game-tools"><button class="secondary" id="pause">Ⅱ 暫停</button></div></div><nav class="stepper" aria-label="料理進度">${steps.map((t, i) => `<div class="step ${i === n ? "current" : i < n ? "done" : ""}" ${i === n ? 'aria-current="step"' : ""}>${i < n ? "✓" : icons[i]} ${t}</div>`).join("")}</nav><div class="workspace"><section class="kitchen" aria-labelledby="stepTitle"><div class="stage-heading"><h2 id="stepTitle">${icons[n]} ${steps[n]}</h2><span class="pill" id="progress">${progress}</span></div><div class="stage" id="stage">${stageMarkup(n, l)}<div class="start-overlay"><span class="big-icon">${icons[n]}</span><h3>${instructions[n][0]}</h3><p>${instructions[n][1]}</p><button class="primary" id="ready">我準備好了 →</button></div></div>${n === 2 ? '<label class="heat-control">🔥 火力 <input id="heat" aria-label="火力百分比" type="range" min="0" max="100" value="42"><b id="heatValue">42%</b></label>' : ""}<div class="game-footer"><div class="feedback" id="feedback" role="status" aria-live="polite">先看看提示，準備好才開始。</div><button class="primary action" id="action" disabled>${["打開雞蛋 ↓", "攪拌一圈 ↻", "等待翻面…", "彈出多士 ↑", "完成擺盤 ✓"][n]}</button></div></section><aside class="sidebar"><div class="side-card"><h3>今日的訂單</h3><div class="order-dish">${l.icon}</div><div class="order-name">${l.dish}</div><div class="order-meta">第 ${n + 1} / 5 個步驟 · ${l.rounds} 顆蛋</div></div><div class="side-card"><div class="stat"><span>剩餘時間</span><strong id="timer">${l.time ? Math.ceil(s.remaining) + "s" : "∞"}</strong></div><div class="meter"><span id="timeFill" style="width:100%"></span></div><div class="stat" style="margin-top:18px;margin-bottom:0"><span>目前分數</span><strong id="score">${s.scores.reduce((a, b) => a + b, 0)}<small class="tiny"> / 100</small></strong></div></div><div class="coach">🧑‍🍳 主廚筆記<br><span id="coach">${["先穩穩打開，再追求速度。", "畫大一點、慢一點，順暢最重要。", "鍋子升溫需要時間，不必一直拉到最大火。", "綠框是理想的金黃區；看準再出手。", "每樣食物都有自己的位置，別急著上菜。"][n]}</span></div></aside></div>`;
+    app.innerHTML = `<div class="game-top"><div><span class="eyebrow">LEVEL ${String(s.level + 1).padStart(2, "0")} / 10</span><h1>${l.name}</h1></div><div class="game-tools"><button class="secondary" id="pause">Ⅱ 暫停</button></div></div><nav class="stepper" aria-label="料理進度">${steps.map((t, i) => `<div class="step ${i === n ? "current" : i < n ? "done" : ""}" ${i === n ? 'aria-current="step"' : ""}><span class="step-icon">${i < n ? "✓" : stepArt(i)}</span><span>${t}</span></div>`).join("")}</nav><div class="workspace"><section class="kitchen" aria-labelledby="stepTitle"><div class="stage-heading"><h2 id="stepTitle"><span class="title-icon">${stepArt(n)}</span>${steps[n]}</h2><span class="pill" id="progress">${progress}</span></div><div class="stage stage-${n}" id="stage">${stageMarkup(n, l)}<div class="start-overlay"><span class="big-icon">${stepArt(n)}</span><h3>${instructions[n][0]}</h3><p>${instructions[n][1]}</p><button class="primary" id="ready">我準備好了 →</button></div></div>${n === 2 ? '<label class="heat-control"><span class="flame-icon" aria-hidden="true"></span>火力 <input id="heat" aria-label="火力百分比" type="range" min="0" max="100" value="42"><b id="heatValue">42%</b></label>' : ""}<div class="game-footer"><div class="feedback" id="feedback" role="status" aria-live="polite">先看看提示，準備好才開始。</div><button class="primary action" id="action" disabled>${["打開雞蛋 ↓", "攪拌一圈 ↻", "等待翻面…", "彈出多士 ↑", "完成擺盤 ✓"][n]}</button></div></section><aside class="sidebar"><div class="side-card"><h3>今日的訂單</h3><div class="order-dish" style="--tint:${A.levelTint[s.level]}">${levelArt(s.level)}</div><div class="order-name">${l.dish}</div><div class="order-meta">第 ${n + 1} / 5 個步驟 · ${l.rounds} 顆蛋</div></div><div class="side-card"><div class="stat"><span>剩餘時間</span><strong id="timer">${l.time ? Math.ceil(s.remaining) + "s" : "∞"}</strong></div><div class="meter"><span id="timeFill" style="width:100%"></span></div><div class="stat" style="margin-top:18px;margin-bottom:0"><span>目前分數</span><strong id="score">${s.scores.reduce((a, b) => a + b, 0)}<small class="tiny"> / 100</small></strong></div></div><div class="coach"><span class="coach-face">${A.chef()}</span><b>主廚筆記</b><br><span id="coach">${["先穩穩打開，再追求速度。", "畫大一點、慢一點，順暢最重要。", "鍋子升溫需要時間，不必一直拉到最大火。", "綠框是理想的金黃區；看準再出手。", "每樣食物都有自己的位置，別急著上菜。"][n]}</span></div></aside></div>`;
     $("#ready").onclick = () => {
       $(".start-overlay").remove();
       s.running = true;
@@ -297,22 +324,13 @@
     $("#pause").onclick = pause;
     $("#action").onclick = action;
     const actionButton = $("#action");
-    let touchActivation = -Infinity;
     actionButton.addEventListener("pointerup", (e) => {
       if (e.pointerType === "touch" && !actionButton.disabled) {
-        touchActivation = performance.now();
+        touchTap = { x: e.clientX, y: e.clientY, t: performance.now() };
         e.preventDefault();
         actionButton.click();
       }
     });
-    actionButton.addEventListener(
-      "click",
-      (e) => {
-        if (e.isTrusted && e.pointerType === "touch" && performance.now() - touchActivation < 600)
-          e.stopImmediatePropagation();
-      },
-      true,
-    );
     if (n === 2)
       $("#heat").oninput = (e) => {
         s.heat = +e.target.value;
@@ -366,19 +384,19 @@
   }
   function stageMarkup(n, l) {
     if (n === 0)
-      return '<span class="gesture-label">往下滑 ↓ 或使用下方按鈕</span><div class="bowl"></div><button class="egg-shell" id="egg" aria-label="雞蛋，按 Enter 或向下滑打開">↓</button>';
+      return `<span class="gesture-label">往下滑 ↓ 或使用下方按鈕</span><div class="bowl"><span class="bowl-yolks" id="yolks"></span></div><button class="egg-shell" id="egg" aria-label="雞蛋，按 Enter 或向下滑打開">${A.rawEgg()}<span class="egg-hint" id="eggHint">↓</span></button>`;
     if (n === 1)
-      return '<span class="gesture-label">在碗內順暢畫圓 ↻</span><div class="mix-bowl" id="mixBowl"><span class="mix-spoon" aria-hidden="true"></span></div>';
+      return '<span class="gesture-label">在碗內順暢畫圓 ↻</span><div class="mix-bowl" id="mixBowl" style="--mix:0"><span class="mix-streaks" aria-hidden="true"></span><span class="mix-spoon" aria-hidden="true"></span></div>';
     if (n === 2)
-      return '<span class="gesture-label" id="temperature">50°C · 目標 65–95°C</span><div class="pan"><span class="pan-food" id="panFood">🍳</span></div>';
+      return '<span class="gesture-label" id="temperature">50°C · 目標 65–95°C</span><div class="thermo" aria-hidden="true"><span class="thermo-zone"></span><span class="thermo-needle" id="thermo"></span></div><div class="burner" aria-hidden="true"></div><div class="pan"><span class="pan-food" id="panFood"></span><i class="steam s1"></i><i class="steam s2"></i><i class="steam s3"></i></div>';
     if (n === 3)
-      return `<span class="gesture-label">綠框內彈出，風味剛剛好</span><div class="toaster"><span class="toast" id="toast">🍞</span><span class="toaster-dot"></span></div><div class="timing"><span class="target-window" style="left:${50 - l.window / 2}%;width:${l.window}%"></span><span class="timing-cursor" id="cursor" style="left:0%"></span></div>`;
+      return `<span class="gesture-label">綠框內彈出，風味剛剛好</span><div class="toaster"><span class="toast" id="toast">${A.toast()}</span><span class="toaster-slot"></span><span class="toaster-lever"></span><span class="toaster-dot"></span></div><div class="timing"><span class="timing-labels" aria-hidden="true"><span>淡</span><span>金黃</span><span>焦</span></span><span class="target-window" style="left:${50 - l.window / 2}%;width:${l.window}%"></span><span class="timing-cursor" id="cursor" style="left:0%"></span></div>`;
     return (
-      '<div class="plate"></div>' +
-      ["🍳", "🍞", "🌭"]
+      '<div class="placemat" aria-hidden="true"></div><span class="cutlery fork" aria-hidden="true"></span><span class="cutlery knife" aria-hidden="true"></span><div class="plate"></div>' +
+      foodArt
         .map(
           (x, i) =>
-            `<button class="plate-target" data-target="${i}" aria-label="${x} 的擺盤位置">${x}</button><button class="plating-food" data-food="${i}" aria-label="選取${x}" aria-pressed="false">${x}</button>`,
+            `<button class="plate-target" data-target="${i}" aria-label="${foodName[i]}的擺盤位置">${A[x]()}</button><button class="plating-food" data-food="${i}" aria-label="選取${foodName[i]}" aria-pressed="false">${A[x]()}</button>`,
         )
         .join("")
     );
@@ -401,7 +419,8 @@
     }
     if (n === 0) crack();
     if (n === 1) addMix(1);
-    if (n === 3)
+    if (n === 3) {
+      $("#toast").classList.add("popped");
       finishStep(
         Math.round(
           clamp(
@@ -421,6 +440,7 @@
             ? "烘得深了一點，下次早點彈出。"
             : "香脆金黃，出爐！",
       );
+    }
     if (n === 4 && state.placed.size === 3)
       finishStep(20, "擺盤整齊，可以上菜了！");
   }
@@ -430,11 +450,16 @@
     beep();
     $("#progress").textContent =
       `${state.cracks} / ${levels[state.level].rounds} 顆`;
-    $("#egg").textContent = "✨";
+    const egg = $("#egg");
+    $("#eggHint").textContent = "✨";
+    egg.classList.remove("cracking");
+    void egg.offsetWidth;
+    egg.classList.add("cracking");
+    $("#yolks").insertAdjacentHTML("beforeend", "<i></i>");
     setTimeout(() => {
       if (view === "game" && state.step === 0 && !state.done)
-        $("#egg").textContent = "↓";
-    }, 180);
+        $("#eggHint").textContent = "↓";
+    }, 380);
     if (state.cracks >= levels[state.level].rounds)
       finishStep(20, "雞蛋全部打開，沒有浪費！");
   }
@@ -446,8 +471,7 @@
     $("#progress").textContent =
       `${Math.min(l.stir, state.mix).toFixed(1)} / ${l.stir} 圈`;
     $(".mix-spoon").style.transform = `rotate(${state.mix * 360}deg)`;
-    $("#mixBowl").style.background =
-      `conic-gradient(#ffce58,${pct > 0.8 ? "#ffd56b" : "#fff1ce"},#ffce58)`;
+    $("#mixBowl").style.setProperty("--mix", pct.toFixed(3));
     if (state.mix >= l.stir) finishStep(20, "蛋液均勻又細滑！");
   }
   function bindStage(n) {
@@ -467,7 +491,7 @@
         if (!origin || e.pointerId !== pointer || !active()) return;
         const dy = clamp(e.clientY - origin.y, 0, 100);
         e.currentTarget.style.transform = `translateY(${dy * .45}px) rotate(${dy * .12}deg)`;
-        e.currentTarget.textContent = dy >= 60 ? "⚡" : "↓";
+        $("#eggHint").textContent = dy >= 60 ? "⚡" : "↓";
       };
       $("#egg").onpointerup = (e) => {
         e.currentTarget.style.transform = "";
@@ -489,7 +513,7 @@
       $("#egg").onpointercancel = () => {
         origin = null;
         $("#egg").style.transform = "";
-        $("#egg").textContent = "↓";
+        $("#eggHint").textContent = "↓";
       };
     }
     if (n === 1) {
@@ -543,7 +567,7 @@
       $('[data-food="0"]').style.filter =
         `brightness(${Math.max(0.35, 1 - state.burn / 100)})`;
       $('[data-food="1"]').style.filter =
-        `brightness(${1 - state.brown * 0.006}) saturate(${1 + state.brown * 0.008})`;
+        toastFilter(state.brown);
       layoutPlate();
       app.querySelectorAll("[data-food]").forEach((el) => {
         let drag = null;
@@ -692,7 +716,7 @@
     s.running = false;
     s.scores[s.step] = score;
     $("#feedback").textContent = `${message} +${score} 分`;
-    $("#score").textContent = s.scores.reduce((a, b) => a + b, 0) + " / 100";
+    $("#score").innerHTML = `${s.scores.reduce((a, b) => a + b, 0)}<small class="tiny"> / 100</small>`;
     $("#progress").textContent = "✓ 完成";
     const b = $("#action");
     b.disabled = false;
@@ -745,7 +769,7 @@
     if (pass && s.level < 9)
       saved.unlocked = Math.max(saved.unlocked, s.level + 1);
     persist();
-    app.innerHTML = `<section class="result"><span class="eyebrow">${timeout ? "再練習一次，就更接近了" : pass ? "ORDER COMPLETE" : "KEEP COOKING"}</span><div class="result-icon">${pass ? (s.level === 9 ? "🏆" : l.icon) : "🧑‍🍳"}</div><h1>${timeout ? "時間到了，先休息一下" : pass ? (s.level === 9 ? "恭喜，十關主廚畢業！" : "這份好心情，上菜了！") : "差一點點，再煮一次！"}</h1><div class="stars" aria-label="${timeout ? 0 : starCount(score)} 顆星">${timeout ? "☆☆☆" : stars(score)}</div><div class="served-dish" aria-label="這次煮出的成品"><span style="filter:brightness(${Math.max(0.35, 1 - s.burn / 100)})">🍳</span><span style="filter:brightness(${1 - s.brown * 0.006}) saturate(${1 + s.brown * 0.008})">🍞</span><span>🌭</span></div><div class="result-score">${score}<small> / 100 分</small></div><p class="muted">${timeout ? "這次未完成訂單；未解鎖下一關，先前最佳紀錄會保留。" : pass ? "手藝又進步了。" + (s.level < 9 ? "下一間小食堂等你開張。" : "所有關卡都已完成，還可以回去挑戰三星。") : "55 分就能過關。留意火候與多士的綠框，再試一次。"}</p><div class="score-grid">${steps.map((t, i) => `<div class="score-cell">${icons[i]} ${t}<b>${s.scores[i] ?? "—"}</b></div>`).join("")}</div>${!storageOK ? '<p class="notice">瀏覽器未允許儲存，關閉後進度可能遺失。</p>' : ""}<div class="result-actions"><button class="secondary" id="map">返回選關</button><button class="secondary" id="retry">再練一次</button>${pass && s.level < 9 ? '<button class="primary" id="nextLevel">下一關 →</button>' : ""}</div></section>`;
+    app.innerHTML = `<section class="result"><span class="eyebrow">${timeout ? "再練習一次，就更接近了" : pass ? "ORDER COMPLETE" : "KEEP COOKING"}</span>${pass ? `<div class="confetti" aria-hidden="true">${Array.from({ length: 28 }, (_, k) => `<i style="--x:${(k * 37) % 100}%;--d:${(k % 7) * 0.12}s;--r:${(k * 53) % 360}deg;--c:${["#e86f4f", "#f4b53f", "#5fa35a", "#4c9bd6", "#f29a8a"][k % 5]}"></i>`).join("")}</div>` : ""}<div class="result-icon">${pass ? (s.level === 9 ? A.trophy() : levelArt(s.level)) : A.chef()}</div><h1>${timeout ? "時間到了，先休息一下" : pass ? (s.level === 9 ? "恭喜，十關主廚畢業！" : "這份好心情，上菜了！") : "差一點點，再煮一次！"}</h1><div class="stars" aria-label="${timeout ? 0 : starCount(score)} 顆星">${timeout ? "☆☆☆" : stars(score)}</div><div class="served-dish" aria-label="這次煮出的成品"><span style="filter:brightness(${Math.max(0.35, 1 - s.burn / 100)})">${A.friedEgg()}</span><span style="filter:${toastFilter(s.brown)}">${A.toast()}</span><span>${A.sausage()}</span></div><div class="result-score">${score}<small> / 100 分</small></div><p class="muted">${timeout ? "這次未完成訂單；未解鎖下一關，先前最佳紀錄會保留。" : pass ? "手藝又進步了。" + (s.level < 9 ? "下一間小食堂等你開張。" : "所有關卡都已完成，還可以回去挑戰三星。") : "55 分就能過關。留意火候與多士的綠框，再試一次。"}</p><div class="score-grid">${steps.map((t, i) => `<div class="score-cell"><span class="score-icon">${stepArt(i)}</span>${t}<b>${s.scores[i] ?? "—"}</b></div>`).join("")}</div>${!storageOK ? '<p class="notice">瀏覽器未允許儲存，關閉後進度可能遺失。</p>' : ""}<div class="result-actions"><button class="secondary" id="map">返回選關</button><button class="secondary" id="retry">再練一次</button>${pass && s.level < 9 ? '<button class="primary" id="nextLevel">下一關 →</button>' : ""}</div></section>`;
     if (s.freePlate && s.placed.size === 3) {
       $(".served-dish").classList.add("custom-dish");
       $(".served-dish").querySelectorAll("span").forEach((el, i) => {
@@ -792,6 +816,10 @@
           $("#feedback").textContent = "第一面煎好了！按翻面，繼續煎另一面。";
         }
         $(".pan").classList.toggle("sizzling", s.temp >= 65 && s.temp <= 95);
+        $(".pan").classList.toggle("smoking", s.temp > 95);
+        $("#stage").style.setProperty("--heat", (s.heat / 100).toFixed(2));
+        $("#thermo").style.left = `${clamp((s.temp - 20) / 110, 0, 1) * 100}%`;
+        $("#panFood").style.setProperty("--cook", clamp(s.cook / 100, 0, 1).toFixed(2));
         if (s.temp > 95) s.burn += (s.temp - 95) * dt * 0.35;
         $("#temperature").textContent =
           `${Math.round(s.temp)}°C · ${s.temp < 65 ? "偏低" : s.temp > 95 ? "過熱！請減火" : "火候剛好 ✓"} · 目標 65–95°C`;
@@ -810,15 +838,18 @@
       if (s.step === 3) {
         s.brown = Math.min(100, s.brown + dt * l.speed);
         $("#cursor").style.left = `calc(${s.brown}% - 2px)`;
-        $("#toast").style.filter =
-          `brightness(${1 - s.brown * 0.006}) saturate(${1 + s.brown * 0.008})`;
+        $("#toast").style.filter = toastFilter(s.brown);
         $("#progress").textContent =
           s.brown < 50 - l.window / 2
             ? "正在烘烤"
             : s.brown <= 50 + l.window / 2
               ? "金黃時刻！"
               : "顏色漸深";
-        if (s.brown >= 100) finishStep(2, "烘過頭了，下次在綠框內彈出。");
+        $(".toaster").style.setProperty("--glow", (s.brown / 100).toFixed(2));
+        if (s.brown >= 100) {
+          $("#toast").classList.add("popped");
+          finishStep(2, "烘過頭了，下次在綠框內彈出。");
+        }
       }
     }
     requestAnimationFrame(tick);

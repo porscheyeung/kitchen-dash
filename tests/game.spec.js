@@ -212,6 +212,7 @@ test("touch device: pointer swipe and tap pairing", async ({ browser }) => {
   await expect(page.locator("#progress")).toHaveText("✓ 完成");
   await page.clock.runFor(500);
   await page.locator("#action").tap();
+  await expect(page.locator(".start-overlay")).toBeVisible();
   await page.locator("#ready").tap();
   await page.locator("#action").tap();
   await page.locator("#action").tap();
@@ -293,6 +294,8 @@ test("iPhone size: level two touch circles keep the spoon centered and complete 
   await page.locator("#ready").tap();
   await page.locator("#action").tap();
   await page.locator("#action").tap();
+  await expect(page.locator(".start-overlay")).toBeVisible();
+  await expect(page.locator("#progress")).toHaveText("0 / 2 圈");
   await page.locator("#ready").tap();
   await page.locator("#mixBowl").scrollIntoViewIfNeeded();
   const bowl = await page.locator("#mixBowl").boundingBox();
